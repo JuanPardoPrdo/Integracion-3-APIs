@@ -42,62 +42,64 @@ globalSearchBtn.addEventListener('click', () => {
 function findBookstores(query) {
     if (!map) return;
     
-    // Limpiar marcadores previos del mapa
     if (markersLayer) {
         markersLayer.clearLayers();
     } else {
         markersLayer = L.layerGroup().addTo(map);
     }
     
-    console.log("Iniciando búsqueda en mapa (Leaflet/Nominatim) para:", query);
+    const bounds = map.getBounds();
+    const north = bounds.getNorth();
+    const south = bounds.getSouth();
+    const east = bounds.getEast();
+    const west = bounds.getWest();
+
+    console.log(`Buscando librerías dinámicamente para: "${query}"...`);
     
-    // Construimos la URL de búsqueda (Usamos Nominatim de OSM - Gratis y sin Key)
-    // Agregamos 'Bogota Colombia' para forzar la búsqueda en el área local
-    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=libreria+${encodeURIComponent(query)}+Bogota+Colombia&limit=20`;
+    // Cambiamos a Photon (Komoot) - API mucho más flexible con CORS y límites de uso
+    // bbox format: minLon, minLat, maxLon, maxLat
+    const searchUrl = `https://photon.komoot.io/api/?q=libreria&bbox=${west},${south},${east},${north}&limit=15`;
 
     fetch(searchUrl)
         .then(response => response.json())
-        .then(results => {
-            console.log("Resultados Nominatim:", results);
+        .then(data => {
+            const results = data.features || [];
+            console.log(`Photon encontró ${results.length} librerías.`);
             
-            if (results && results.length > 0) {
-                const group = [];
-
-                results.forEach(place => {
-                    const lat = parseFloat(place.lat);
-                    const lon = parseFloat(place.lon);
+            if (results.length > 0) {
+                results.forEach(feature => {
+                    const [lon, lat] = feature.geometry.coordinates;
+                    const props = feature.properties;
+                    const name = props.name || "Librería";
+                    const street = props.street || "";
+                    const house = props.housenumber || "";
+                    const address = `${street} ${house}`.trim() || "Dirección no disponible";
+                    const phone = props.phone || "No disponible";
+                    const city = props.city || "";
                     
-                    const marker = L.marker([lat, lon])
-                        .bindPopup(`<b>${place.display_name.split(',')[0]}</b><br>${place.display_name}`)
+                    L.marker([lat, lon])
+                        .bindPopup(`
+                            <div style="font-family: 'Inter', sans-serif; min-width: 180px;">
+                                <strong style="color: #2563eb; font-size: 1rem; display: block; margin-bottom: 5px;">${name}</strong>
+                                <div style="font-size: 0.85rem; color: #333; line-height: 1.4;">
+                                    <p style="margin: 2px 0;">📍 <b>Dir:</b> ${address}</p>
+                                    <p style="margin: 2px 0;">🏙️ <b>Ciudad:</b> ${city}</p>
+                                    <p style="margin: 2px 0;">📞 <b>Tel:</b> ${phone}</p>
+                                </div>
+                                <hr style="border: 0; border-top: 1px solid #eee; margin: 8px 0;">
+                                <p style="margin: 0; font-size: 0.75rem; color: #666; font-style: italic;">
+                                    Búsqueda: <strong>${query}</strong>
+                                </p>
+                            </div>
+                        `)
                         .addTo(markersLayer);
-                    
-                    group.push([lat, lon]);
                 });
-
-                // Ajustar el zoom para ver todos los marcadores nuevos
-                const bounds = L.latLngBounds(group);
-                map.fitBounds(bounds, { padding: [50, 50] });
-
             } else {
-                console.log("No se encontraron librerías específicas, intentando búsqueda genérica cercana...");
-                // Búsqueda genérica si no hay resultados específicos
-                const center = map.getCenter();
-                const fallbackUrl = `https://nominatim.openstreetmap.org/search?format=json&q=libreria&bounded=1&viewbox=${center.lng-0.1},${center.lat+0.1},${center.lng+0.1},${center.lat-0.1}&limit=5`;
-                
-                fetch(fallbackUrl)
-                    .then(r => r.json())
-                    .then(fallbackResults => {
-                        fallbackResults.forEach(place => {
-                            L.marker([place.lat, place.lon])
-                                .bindPopup(`<b>Librería Cercana</b><br>${place.display_name}`)
-                                .addTo(markersLayer);
-                        });
-                    });
+                console.log("No hay librerías en esta vista exacta. Mueve el mapa para buscar en otra zona.");
             }
         })
         .catch(error => {
-            console.error("Error en búsqueda Nominatim:", error);
-            alert("Error al buscar en el mapa. Revisa tu conexión.");
+            console.error("Error en búsqueda Photon:", error);
         });
 }
 
@@ -211,6 +213,19 @@ function initMap() {
     userMarker = L.marker(defaultCoords).addTo(map)
         .bindPopup('<b>Ubicación de Referencia</b><br>Tú estás aquí.')
         .openPopup();
+
+    // Actualizar búsqueda automáticamente cuando el mapa se mueva (con Debounce)
+    let moveTimeout;
+    map.on('moveend', () => {
+        const query = globalSearchInput.value.trim();
+        if (query) {
+            clearTimeout(moveTimeout);
+            moveTimeout = setTimeout(() => {
+                console.log("Mapa movido y quieto, refrescando marcadores...");
+                findBookstores(query);
+            }, 1000); // Esperamos 1000ms después de que dejó de moverse
+        }
+    });
 }
 
 // Inicializar automáticamente al cargar el script

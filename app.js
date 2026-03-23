@@ -1,7 +1,7 @@
 // --- Configuración de APIs ---
 // NOTA: Para YouTube y Google Maps es necesario usar una API Key válida.
 // Reemplaza 'TU_API_KEY_AQUI' en el index.html para Maps, y aquí para YouTube.
-const YOUTUBE_API_KEY = 'AIzaSyCoxmFqHReT4v2Nx7zr8d44kVvOYuc0ojo';
+const YOUTUBE_API_KEY = 'TU_YOUTUBE_API_KEY_AQUI';
 
 // --- Variables Mapa (Leaflet) ---
 let map;

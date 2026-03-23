@@ -73,23 +73,23 @@ function findBookstores(query) {
                     const name = props.name || "Librería";
                     const street = props.street || "";
                     const house = props.housenumber || "";
-                    const address = `${street} ${house}`.trim() || "Dirección no disponible";
-                    const phone = props.phone || "No disponible";
                     const city = props.city || "";
+                    const address = `${street} ${house}`.trim() || city || "Dirección no disponible";
+                    const phone = props.phone || "";
+                    const website = props.website || props.url || "";
                     
                     L.marker([lat, lon])
                         .bindPopup(`
-                            <div style="font-family: 'Inter', sans-serif; min-width: 180px;">
-                                <strong style="color: #2563eb; font-size: 1rem; display: block; margin-bottom: 5px;">${name}</strong>
-                                <div style="font-size: 0.85rem; color: #333; line-height: 1.4;">
-                                    <p style="margin: 2px 0;">📍 <b>Dir:</b> ${address}</p>
-                                    <p style="margin: 2px 0;">🏙️ <b>Ciudad:</b> ${city}</p>
-                                    <p style="margin: 2px 0;">📞 <b>Tel:</b> ${phone}</p>
+                            <div style="min-width: 220px; font-family: 'Inter', sans-serif; padding: 5px;">
+                                <h3 style="color: #1a56db; font-size: 1.1rem; margin: 0 0 10px 0; font-weight: 700;">${name}</h3>
+                                <div style="font-size: 0.85rem; color: #4b5563; line-height: 1.6;">
+                                    <p style="margin: 5px 0;">📍 <b>Dirección:</b> ${address}</p>
+                                    ${phone ? `<p style="margin: 5px 0;">📞 <b>Teléfono:</b> <a href="tel:${phone}" style="color: #2563eb; text-decoration: none;">${phone}</a></p>` : ''}
+                                    ${website ? `<p style="margin: 12px 0 5px 0;"><a href="${website}" target="_blank" style="background: #2563eb; color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 600; text-align: center; width: 100%; box-sizing: border-box;">🌐 Visitar Página Web</a></p>` : ''}
                                 </div>
-                                <hr style="border: 0; border-top: 1px solid #eee; margin: 8px 0;">
-                                <p style="margin: 0; font-size: 0.75rem; color: #666; font-style: italic;">
-                                    Búsqueda: <strong>${query}</strong>
-                                </p>
+                                <div style="margin-top: 15px; border-top: 1px solid #e5e7eb; padding-top: 10px; font-size: 0.75rem; color: #9ca3af; font-style: italic; text-align: center;">
+                                    Recomendado para: <strong>${query}</strong>
+                                </div>
                             </div>
                         `)
                         .addTo(markersLayer);

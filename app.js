@@ -37,7 +37,7 @@ globalSearchBtn.addEventListener('click', () => {
 });
 
 // ==========================================
-// Funciones de Lógica de Mapa (Places)
+// Funciones de Lógica de Mapa (Places) 
 // ==========================================
 function findBookstores(query) {
     if (!map) return;

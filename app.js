@@ -52,8 +52,8 @@ function findBookstores(query) {
     console.log("Iniciando búsqueda en mapa (Leaflet/Nominatim) para:", query);
     
     // Construimos la URL de búsqueda (Usamos Nominatim de OSM - Gratis y sin Key)
-    // Buscamos librerías cerca de la posición actual del mapa o globales si se prefiere
-    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=libreria+${encodeURIComponent(query)}&limit=10`;
+    // Agregamos 'Bogota Colombia' para forzar la búsqueda en el área local
+    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=libreria+${encodeURIComponent(query)}+Bogota+Colombia&limit=20`;
 
     fetch(searchUrl)
         .then(response => response.json())

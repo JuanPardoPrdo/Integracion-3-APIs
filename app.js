@@ -1,7 +1,7 @@
 // --- Configuración de APIs ---
 // NOTA: Para YouTube y Google Maps es necesario usar una API Key válida.
 // Reemplaza 'TU_API_KEY_AQUI' en el index.html para Maps, y aquí para YouTube.
-const YOUTUBE_API_KEY = 'AIzaSyCoxmFqHReT4v2Nx7zr8d44kVvOYuc0ojo';
+const YOUTUBE_API_KEY = 'AIzaSyDTDXlr152pMn_l2KWwADCbJC0IiTUBB2g';
 
 // --- Variables Mapa (Leaflet) ---
 let map;
@@ -131,7 +131,7 @@ async function fetchBooks(query) {
     booksResults.innerHTML = '<div class="loader"></div>';
     
     try {
-        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
+        const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&key=your_api_key`);
         if (!response.ok) throw new Error('Error al buscar libros');
         
         const data = await response.json();

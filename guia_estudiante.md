@@ -16,16 +16,18 @@ Para que la sección de videos funcione, necesitas una "API Key" de Google Cloud
 2.  Crea un **Proyecto Nuevo** (ej. "Actividad APIs").
 3.  Habilita la **YouTube Data API v3** en la biblioteca de APIs.
 4.  Ve a **Credenciales > Crear Credenciales > Clave de API**.
-5.  Copia la clave y pégala en el archivo `app.js` en la variable:
+5.  Copia la clave generada y pégala en el archivo `app.js` en la variable:
     `const YOUTUBE_API_KEY = 'TU_CLAVE_AQUI';`
 
 ---
 
-## Paso 2: El Mapa (Leaflet + Photon)
+## Paso 2: El Mapa Inteligente (Leaflet + Photon)
 A diferencia de Google Maps, **esta implementación no requiere que registres una tarjeta de crédito**.
-*   Utilizamos la librería **Leaflet** para renderizar el mapa.
-*   Utilizamos la API de **Photon (Komoot)** para buscar librerías en tiempo real. 
-*   **Dato Clave:** El mapa se actualiza automáticamente al moverlo por Bogotá gracias a un sistema de *Debounce* que optimiza las peticiones.
+*   **Búsqueda Dual:** La aplicación busca simultáneamente tu término exacto (ej: UMB) y librerías en la zona.
+*   **Iconos Diferenciados:** 
+    *   **🟠 Marcador Naranja (Pulsante):** Indica el lugar exacto que buscaste.
+    *   **🔵 Marcador Azul (Librerías):** Indica las librerías cercanas.
+*   **Dato Clave:** El mapa se actualiza automáticamente al moverlo por la interfaz gracias a un sistema de *Debounce* que optimiza las peticiones asíncronas.
 
 ---
 

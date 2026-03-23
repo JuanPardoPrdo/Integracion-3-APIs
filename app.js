@@ -1,12 +1,11 @@
 // --- Configuración de APIs ---
 // NOTA: Para YouTube y Google Maps es necesario usar una API Key válida.
 // Reemplaza 'TU_API_KEY_AQUI' en el index.html para Maps, y aquí para YouTube.
-const YOUTUBE_API_KEY = 'TU_YOUTUBE_API_KEY_AQUI';
+const YOUTUBE_API_KEY = 'AIzaSyCoxmFqHReT4v2Nx7zr8d44kVvOYuc0ojo';
 
 // --- Variables Mapa (Leaflet) ---
 let map;
 let markersLayer;
-let userMarker;
 
 // --- Elementos del DOM ---
 const globalSearchBtn = document.getElementById('global-search-btn');
@@ -53,54 +52,75 @@ function findBookstores(query) {
     const south = bounds.getSouth();
     const east = bounds.getEast();
     const west = bounds.getWest();
+    const bbox = `${west},${south},${east},${north}`;
 
-    console.log(`Buscando librerías dinámicamente para: "${query}"...`);
+    console.log(`Buscando lugares y librerías para: "${query}"...`);
     
-    // Cambiamos a Photon (Komoot) - API mucho más flexible con CORS y límites de uso
-    // bbox format: minLon, minLat, maxLon, maxLat
-    const searchUrl = `https://photon.komoot.io/api/?q=libreria&bbox=${west},${south},${east},${north}&limit=15`;
+    // Realizamos dos búsquedas para enriquecer el mapa:
+    // 1. El término de búsqueda exacto (ej: UMB, una dirección, etc.)
+    // 2. Librerías relacionadas o genéricas en la zona
+    const searchUrls = [
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&bbox=${bbox}&limit=10`,
+        `https://photon.komoot.io/api/?q=libreria&bbox=${bbox}&limit=10`
+    ];
 
-    fetch(searchUrl)
-        .then(response => response.json())
-        .then(data => {
-            const results = data.features || [];
-            console.log(`Photon encontró ${results.length} librerías.`);
+    Promise.all(searchUrls.map(url => fetch(url).then(r => r.json())))
+        .then(dataArray => {
+            // Marcamos el tipo antes de combinar:
+            const exactPlaces = dataArray[0].features.map(f => ({ ...f, type: 'place' }));
+            const bookstores = dataArray[1].features.map(f => ({ ...f, type: 'bookstore' }));
             
-            if (results.length > 0) {
-                results.forEach(feature => {
-                    const [lon, lat] = feature.geometry.coordinates;
-                    const props = feature.properties;
-                    const name = props.name || "Librería";
-                    const street = props.street || "";
-                    const house = props.housenumber || "";
-                    const city = props.city || "";
-                    const address = `${street} ${house}`.trim() || city || "Dirección no disponible";
-                    const phone = props.phone || "";
-                    const website = props.website || props.url || "";
-                    
-                    L.marker([lat, lon])
-                        .bindPopup(`
-                            <div style="min-width: 220px; font-family: 'Inter', sans-serif; padding: 5px;">
-                                <h3 style="color: #1a56db; font-size: 1.1rem; margin: 0 0 10px 0; font-weight: 700;">${name}</h3>
-                                <div style="font-size: 0.85rem; color: #4b5563; line-height: 1.6;">
-                                    <p style="margin: 5px 0;">📍 <b>Dirección:</b> ${address}</p>
-                                    ${phone ? `<p style="margin: 5px 0;">📞 <b>Teléfono:</b> <a href="tel:${phone}" style="color: #2563eb; text-decoration: none;">${phone}</a></p>` : ''}
-                                    ${website ? `<p style="margin: 12px 0 5px 0;"><a href="${website}" target="_blank" style="background: #2563eb; color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 600; text-align: center; width: 100%; box-sizing: border-box;">🌐 Visitar Página Web</a></p>` : ''}
-                                </div>
-                                <div style="margin-top: 15px; border-top: 1px solid #e5e7eb; padding-top: 10px; font-size: 0.75rem; color: #9ca3af; font-style: italic; text-align: center;">
-                                    Recomendado para: <strong>${query}</strong>
-                                </div>
-                            </div>
-                        `)
-                        .addTo(markersLayer);
+            const allFeatures = [...exactPlaces, ...bookstores];
+            
+            const seen = new Set();
+            let count = 0;
+
+            allFeatures.forEach(feature => {
+                const [lon, lat] = feature.geometry.coordinates;
+                const props = feature.properties;
+                const name = props.name || props.street || "Lugar de interés";
+                const city = props.city || "";
+                
+                const key = `${lat},${lon}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                count++;
+
+                const address = `${props.street || ''} ${props.housenumber || ''}`.trim() || city || "Ver en mapa";
+                const phone = props.phone || "No disponible";
+                const website = props.website || props.url || "";
+                
+                // Creamos un marcador con color según el tipo
+                const markerClass = feature.type === 'place' ? 'marker-place' : 'marker-book';
+                
+                const customIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div class="marker-inner ${markerClass}"></div>`,
+                    iconSize: [26, 26],
+                    iconAnchor: [13, 13]
                 });
-            } else {
-                console.log("No hay librerías en esta vista exacta. Mueve el mapa para buscar en otra zona.");
-            }
+
+                L.marker([lat, lon], { icon: customIcon })
+                    .bindPopup(`
+                        <div style="min-width: 220px; font-family: 'Inter', sans-serif; padding: 5px;">
+                            <h3 style="color: #1a56db; font-size: 1.1rem; margin: 0 0 10px 0; font-weight: 700;">${name}</h3>
+                            <div style="font-size: 0.85rem; color: #4b5563; line-height: 1.6;">
+                                <p style="margin: 5px 0;">🏷️ <b>Tipo:</b> ${feature.type === 'place' ? 'Lugar exacto' : 'Librería'}</p>
+                                <p style="margin: 5px 0;">📍 <b>Dir:</b> ${address}</p>
+                                <p style="margin: 5px 0;">🏙️ <b>Ciudad:</b> ${city}</p>
+                                ${phone !== 'No disponible' ? `<p style="margin: 5px 0;">📞 <b>Tel:</b> <a href="tel:${phone}" style="color: #2563eb; text-decoration: none;">${phone}</a></p>` : ''}
+                                ${website ? `<p style="margin: 10px 0 5px 0;"><a href="${website}" target="_blank" style="background: #2563eb; color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: 600; text-align: center; width: 100%; box-sizing: border-box;">🌐 Ver Sitio Web</a></p>` : ''}
+                            </div>
+                            <div style="margin-top: 15px; border-top: 1px solid #e5e7eb; padding-top: 10px; font-size: 0.75rem; color: #9ca3af; font-style: italic; text-align: center;">
+                                Búsqueda: <strong>${query}</strong>
+                            </div>
+                        </div>
+                    `)
+                    .addTo(markersLayer);
+            });
+            console.log(`Se mostraron ${count} marcadores únicos.`);
         })
-        .catch(error => {
-            console.error("Error en búsqueda Photon:", error);
-        });
+        .catch(error => console.error("Error en búsqueda combinada:", error));
 }
 
 // ==========================================
@@ -208,11 +228,6 @@ function initMap() {
 
     // Capa para marcadores de búsqueda
     markersLayer = L.layerGroup().addTo(map);
-
-    // Marcador de referencia (Principal)
-    userMarker = L.marker(defaultCoords).addTo(map)
-        .bindPopup('<b>Ubicación de Referencia</b><br>Tú estás aquí.')
-        .openPopup();
 
     // Actualizar búsqueda automáticamente cuando el mapa se mueva (con Debounce)
     let moveTimeout;

@@ -102,6 +102,7 @@ header h1 {
     margin-bottom: 0.5rem;
     background: linear-gradient(to right, #60a5fa, #c084fc);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -117,7 +118,7 @@ header p {
 /* Grid Layout */
 .grid-layout {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
 }
 
@@ -314,4 +315,41 @@ button:active {
     .grid-layout {
         grid-template-columns: 1fr;
     }
+}
+
+/* Custom Leaflet Markers */
+.custom-marker {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.marker-inner {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    transition: transform 0.2s ease;
+}
+
+.marker-inner:hover {
+    transform: scale(1.4);
+}
+
+.marker-book {
+    background-color: #3b82f6; /* Blue */
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+}
+
+.marker-place {
+    background-color: #f97316; /* Orange */
+    box-shadow: 0 0 15px rgba(249, 115, 22, 0.6);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
 }
